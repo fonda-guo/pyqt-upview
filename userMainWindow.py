@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QLCDNumber
 
 import Commu_test
 from Commu_test import *
+from threadDataSave import Thread_DataSaveHandle
 from threadSCPI import Thread_SCPIHandle
 from threadSerial import Thread_SerialHandle
 
@@ -17,13 +18,18 @@ class Ui_UserMainWindow(Ui_MainWindow):
         self.thread_Serial = Thread_SerialHandle()
         self.thread_Serial.data_received.connect(self.readData)
         self.thread_Serial.showbatdata.connect(self.showBatData)
-        self.thread_Serial.start()
         self.thread_Serial.data_lost.connect(self.dataWrongReport)
+        self.thread_Serial.start()
+
 
         self.thread_scpi = Thread_SCPIHandle()
-        self.thread_scpi.start()
         self.thread_scpi.faultACT.connect(self.wrongMessage)
         self.thread_scpi.showLoad.connect(self.showLoadData)
+        self.thread_scpi.start()
+
+        self.thread_save = Thread_DataSaveHandle()
+        self.thread_save.fileNameShow.connect(self.showFileName)
+        self.thread_save.start()
 
         self.showdict = {0:self.lcdcell1,
                          1:self.lcdcell2,
@@ -33,27 +39,19 @@ class Ui_UserMainWindow(Ui_MainWindow):
                          5:self.lcdcell6,
                          6:self.lcdcell7,
                          7:self.lcdcell8,
-                         8:self.lcdcell9,
-                         9:self.lcdcell10,
-                         10:self.lcdcell11,
-                         11:self.lcdcell12,
-                         12:self.lcdcell13,
-                         13:self.lcdcell14,
-                         14:self.lcdcell15,
-                         15:self.lcdcell16,
-                         16:self.lcdstack,
-                         17:self.lcdLDpin,
-                         18:self.lcdcellab,
-                         19:self.lcdcellssA,
-                         20:self.lcdcellssB,
-                         21:self.lcdcellssC,
-                         22:self.lcdcellfs,
-                         23:self.lcdcellTS1,
-                         24:self.lcdcellTS2,
-                         25:self.lcdcellTS3,
-                         26:self.lcdcellTS4,
-                         27:self.lcdcurrent,
-                         28:self.lcdcnter
+                         8:self.lcdstack,
+                         9:self.lcdLDpin,
+                         10:self.lcdcellab,
+                         11:self.lcdcellssA,
+                         12:self.lcdcellssB,
+                         13:self.lcdcellssC,
+                         14:self.lcdcellfs,
+                         15:self.lcdcellTS1,
+                         16:self.lcdcellTS2,
+                         17:self.lcdcellTS3,
+                         18:self.lcdcellTS4,
+                         19:self.lcdcurrent,
+                         20:self.lcdcnter
                          }
 
 
@@ -75,6 +73,8 @@ class Ui_UserMainWindow(Ui_MainWindow):
         self.pushButton_sourCurSet.clicked.connect(self.sourCurSetAct)
         self.pushButton_clearSCPIinfo.clicked.connect(self.clearSCPIinfo)
         self.pushButton_outputACT.clicked.connect(self.outputACT)
+        self.pushButton_newFileSave.clicked.connect(self.newDataSave)
+        self.pushButton_StartSave.clicked.connect(self.startStopSavingData)
    # serial
     def scanPort(self):
         self.comboBox_com.clear()
@@ -197,7 +197,12 @@ class Ui_UserMainWindow(Ui_MainWindow):
         elif index <= self.thread_Serial.PCPoint.ts4:
             self.showdict[index].display(format(data/10, '.1f'))
         elif index == self.thread_Serial.PCPoint.current:
-            self.showdict[index].display(format(data/25, '.1f'))
+            #self.showdict[index].display(format((int(data))/25, '.1f'))
+            #int16 show:
+            show_cur = data
+            if data > 32767:
+                show_cur = data - 65536
+            self.showdict[index].display(format(show_cur/ 25, '.1f'))
         elif index ==self.thread_Serial.PCPoint.test_cnter:
             hour = int(data*0.5/3600)
             minute = int(data*0.5/60)  - hour*60
@@ -211,10 +216,30 @@ class Ui_UserMainWindow(Ui_MainWindow):
         self.textBrowser_info.append("packet lost!")
 
     def testcnterClear(self):
-        self.thread_Serial.comPort.writeComPort(bytes.fromhex("0701001C0000000A"))
+
+        self.thread_Serial.comPort.writeComPort(bytes.fromhex("070100140000000A"))
 
     def batInfoClear(self):
        self.textBrowser_batInfo.clear()
+
+    #Save Data
+    def showFileName(self,fileName):
+        self.textBrowser_FileName.setText(fileName)
+
+    def newDataSave(self):
+        self.thread_save.newDataFile()
+
+    def startStopSavingData(self):
+        text = self.pushButton_StartSave.text()
+        if text == "Start Saving Data":
+            self.thread_save.writeFlag = True
+            self.pushButton_StartSave.setText("Stop Saving Data")
+        elif text == "Stop Saving Data":
+            self.thread_save.writeFlag = False
+            self.pushButton_StartSave.setText("Start Saving Data")
+
+
+
 
 
 ##############################################################

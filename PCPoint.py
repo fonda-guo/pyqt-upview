@@ -1,48 +1,75 @@
 pointdict = {}
 def update_pointdict(index,data):
     global pointdict
-    pointdict[index] = data
+    if (index >= 0) and (index <= PCPoint.LDpinVol):
+        pointdict[index] = format(data / 1000, '.3f')
+    elif (index >= PCPoint.ts1) and (index <= PCPoint.ts4):
+        pointdict[index] = format(data/10, '.1f')
+    elif index == PCPoint.current:
+        if data > 32767:
+            data = data - 65536
+        pointdict[index] = format(data / 25, '.1f')
 
 def lookup_pointdict(index):
     global pointdict
-    return pointdict[index]
+    if index in pointdict:
+        return pointdict[index]
+    else:
+        return 0xffff
 
 
 
 class PCPoint:
+    cell1Vol = 0
+    cell2Vol = 1
+    cell3Vol = 2
+    cell4Vol = 3
+    cell5Vol = 4
+    cell6Vol = 5
+    cell7Vol = 6
+    cell8Vol = 7
+    stackVol = 8
+    LDpinVol = 9
+    alarmBits = 10
+    safetyStatusA = 11
+    safetyStatusB = 12
+    safetyStatusC = 13
+    fet_Status = 14
+    ts1 = 15
+    ts2 = 16
+    ts3 = 17
+    ts4 = 18
+    current = 19
+    test_cnter = 20
+    # add here and change the number
+    fault = 21
+    u16_pc_buffer_num = 22
     def __init__(self):
-        self.cell1Vol = 0
-        self.cell2Vol = 1
-        self.cell3Vol = 2
-        self.cell4Vol = 3
-        self.cell5Vol = 4
-        self.cell6Vol = 5
-        self.cell7Vol = 6
-        self.cell8Vol = 7
-        self.cell9Vol = 8
-        self.cell10Vol = 9
-        self.cell11Vol = 10
-        self.cell12Vol = 11
-        self.cell13Vol = 12
-        self.cell14Vol = 13
-        self.cell15Vol = 14
-        self.cell16Vol = 15
-        self.stackVol = 16
-        self.LDpinVol = 17
-        self.alarmBits = 18
-        self.safetyStatusA = 19
-        self.safetyStatusB = 20
-        self.safetyStatusC = 21
-        self.fet_Status = 22
-        self.ts1 = 23
-        self.ts2 = 24
-        self.ts3 = 25
-        self.ts4 = 26
-        self.current = 27
-        self.test_cnter = 28
-        #add here and change the number
-        self.fault = 29
-        self.u16_pc_buffer_num = 30
+        a = 1+1
+        # self.cell1Vol = 0
+        # self.cell2Vol = 1
+        # self.cell3Vol = 2
+        # self.cell4Vol = 3
+        # self.cell5Vol = 4
+        # self.cell6Vol = 5
+        # self.cell7Vol = 6
+        # self.cell8Vol = 7
+        # self.stackVol = 8
+        # self.LDpinVol = 9
+        # self.alarmBits = 10
+        # self.safetyStatusA = 11
+        # self.safetyStatusB = 12
+        # self.safetyStatusC = 13
+        # self.fet_Status = 14
+        # self.ts1 = 15
+        # self.ts2 = 16
+        # self.ts3 = 17
+        # self.ts4 = 18
+        # self.current = 19
+        # self.test_cnter = 20
+        # #add here and change the number
+        # self.fault = 21
+        # self.u16_pc_buffer_num = 22
 
     def askPointData(self,index):
         str1 = "0700"

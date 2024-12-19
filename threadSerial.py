@@ -36,6 +36,7 @@ class Thread_SerialHandle(QThread):
                     index,value = self.PCPoint.readPointData(data)
                     if index != -1:
                         self.showbatdata.emit(index,value)
+                        update_pointdict(index,value)
                 else:
                     self.data_lost.emit()
                 # if self.pc_askindex == self.PCPoint.u16_pc_buffer_num:
