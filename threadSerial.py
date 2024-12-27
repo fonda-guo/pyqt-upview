@@ -22,7 +22,7 @@ class Thread_SerialHandle(QThread):
                 #keep asking mode
                 # if self.pc_askindex == 0:
                 #     t_start = time.perf_counter()
-                if self.pc_askindex < self.PCPoint.u16_pc_buffer_num:
+                if self.pc_askindex < self.PCPoint.fault:
                   bytesmessage = self.PCPoint.askPointData(self.pc_askindex)
                   self.comPort.writeComPort(bytesmessage)
                   self.pc_askindex = self.pc_askindex + 1

@@ -41,6 +41,15 @@ class Thread_DataSaveHandle(QThread):
             "ts3" : self.pcdict.ts3,
             "ts4" : self.pcdict.ts4,
             "current" : self.pcdict.current,
+            "SOC_box" : self.pcdict.SOC_box,
+            "SOC_cell1" : self.pcdict.SOC_cell1,
+            "SOC_cell2" : self.pcdict.SOC_cell2,
+            "SOC_cell3" : self.pcdict.SOC_cell3,
+            "SOC_cell4" : self.pcdict.SOC_cell4,
+            "SOC_cell5" : self.pcdict.SOC_cell5,
+            "SOC_cell6" : self.pcdict.SOC_cell6,
+            "SOC_cell7" : self.pcdict.SOC_cell7,
+            "SOC_cell8" : self.pcdict.SOC_cell8
         }
         self.filename = "./data" + time.strftime('%Y-%m-%d %H-%M-%S') + ".csv"
         self.nameRow = []

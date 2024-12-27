@@ -1,5 +1,6 @@
 from PyQt5.QtCore import *
 
+from PCPoint import PCPoint, lookup_pointdict
 from comPort import COM
 import time
 
@@ -10,10 +11,15 @@ current = 0
 class Thread_SCPIHandle(QThread):
     faultACT = pyqtSignal(str)
     showLoad = pyqtSignal(float,float)
-
+    vollowerbound = 2.9
+    vollowerthd = 2.905
+    tricklethreshould1 = 3.50    #78A
+    tricklethreshould2 = 3.55    #31A
+    volupperbound = 3.58
     def __init__(self):
         super(Thread_SCPIHandle, self).__init__()
         self.scpi = SCPI()
+        self.pcpoint = PCPoint()
     def scpiCheckAct(self):
         if self.scpi.openFlag:
             result = ''
@@ -119,7 +125,7 @@ class Thread_SCPIHandle(QThread):
                     self.faultACT.emit("wrong cur number")
                     continue
 
-                if vol >= 30 or vol <= 20:
+                if vol >= 30 or vol <= 18:
                     self.faultACT.emit("vol fault")
                     self.outputClose()
                     continue
@@ -128,5 +134,39 @@ class Thread_SCPIHandle(QThread):
                     self.faultACT.emit("cur fault")
                     self.outputClose()
                     continue
+                maxcellvol = float(lookup_pointdict(self.pcpoint.maxcellvol))
+                mincellvol = float(lookup_pointdict(self.pcpoint.mincellvol))
+                ts1 = float(lookup_pointdict(self.pcpoint.ts1))
+                ts2 = float(lookup_pointdict(self.pcpoint.ts2))
+                ts3 = float(lookup_pointdict(self.pcpoint.ts3))
+                ts4 = float(lookup_pointdict(self.pcpoint.ts4))
+                maxts = max(ts1,ts2,ts3,ts4)
 
+                if maxts > 50:
+                    self.faultACT.emit("over temperature fault!")
+                    self.outputClose()
+                if cur > 0:
+                    #charge
+                    if self.tricklethreshould1 < maxcellvol < self.tricklethreshould2:
+                        if cur > 78:
+                            self.sourCurSet("78")
+                            self.faultACT.emit("trickle-charge mode 1 set(max 78A)")
+                    elif self.tricklethreshould2 <= maxcellvol < self.volupperbound:
+                        if cur > 31:
+                            self.sourCurSet("31")
+                            self.faultACT.emit("trickle-charge mode 2 set(max 31A)")
+                    elif maxcellvol >= self.volupperbound:
+                        self.sourCurSet("0")
+                        self.faultACT.emit("upper cell voltage reached")
+                        self.outputClose()
+                if cur < 0:
+                    #discharge
+                    if self.vollowerbound < mincellvol <= self.vollowerthd:
+                        if cur < -60:
+                            self.loadCurSet("60")
+                            self.faultACT.emit("discharge threthold reached(max 60A)")
+                    elif mincellvol <= self.vollowerbound:
+                        self.loadCurSet("0")
+                        self.faultACT.emit("lower cell voltage reached")
+                        self.outputClose()
                 self.showLoad.emit(cur,vol)

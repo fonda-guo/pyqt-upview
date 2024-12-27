@@ -2,6 +2,7 @@ import sys
 import time
 
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QLCDNumber
+from pyexpat.errors import messages
 
 import Commu_test
 from Commu_test import *
@@ -31,6 +32,8 @@ class Ui_UserMainWindow(Ui_MainWindow):
         self.thread_save.fileNameShow.connect(self.showFileName)
         self.thread_save.start()
 
+        self.debugBuffer = 0
+
         self.showdict = {0:self.lcdcell1,
                          1:self.lcdcell2,
                          2:self.lcdcell3,
@@ -51,7 +54,17 @@ class Ui_UserMainWindow(Ui_MainWindow):
                          17:self.lcdcellTS3,
                          18:self.lcdcellTS4,
                          19:self.lcdcurrent,
-                         20:self.lcdcnter
+                         20:self.lcdcnter,
+                         23:self.lcdSOCbox,
+                         24:self.lcdSOCcell1,
+                         25:self.lcdSOCcell2,
+                         26:self.lcdSOCcell3,
+                         27:self.lcdSOCcell4,
+                         28:self.lcdSOCcell5,
+                         29:self.lcdSOCcell6,
+                         30:self.lcdSOCcell7,
+                         31:self.lcdSOCcell8,
+                         32:self.lcdSOHbox
                          }
 
 
@@ -75,6 +88,16 @@ class Ui_UserMainWindow(Ui_MainWindow):
         self.pushButton_outputACT.clicked.connect(self.outputACT)
         self.pushButton_newFileSave.clicked.connect(self.newDataSave)
         self.pushButton_StartSave.clicked.connect(self.startStopSavingData)
+        self.pushButton_sendAddr.clicked.connect(self.sendDebugAddr)
+        #
+        self.textBroswerMaxSet()
+
+   #all textBroswer max 20 message
+    def textBroswerMaxSet(self):
+        self.textBrowser_receive.document().setMaximumBlockCount(20)
+        self.textBrowser_batInfo.document().setMaximumBlockCount(20)
+        self.textBrowser_info.document().setMaximumBlockCount(20)
+        self.textBrowser_info_ACT.document().setMaximumBlockCount(20)
    # serial
     def scanPort(self):
         self.comboBox_com.clear()
@@ -208,6 +231,13 @@ class Ui_UserMainWindow(Ui_MainWindow):
             minute = int(data*0.5/60)  - hour*60
             second = data*0.5 - hour*3600 - minute*60
             self.showdict[index].display(str(hour)+':'+str(minute)+':'+str(format(second, '.1f')))
+        elif index == self.thread_Serial.PCPoint.debug_register1:
+            self.debugBuffer = data
+        elif index == self.thread_Serial.PCPoint.debug_register2:
+            self.debugBuffer = (self.debugBuffer << 16) + data
+            self.textBrowser_DebugReg.setText(hex(self.debugBuffer))
+        elif self.thread_Serial.PCPoint.SOC_box <= index <= self.thread_Serial.PCPoint.SOH_box:
+            self.showdict[index].display(format(data/100, '.2f'))
         elif index == self.thread_Serial.PCPoint.fault:
             if data == 1:
                 self.textBrowser_batInfo.append("I2C DEAD!")
@@ -216,8 +246,8 @@ class Ui_UserMainWindow(Ui_MainWindow):
         self.textBrowser_info.append("packet lost!")
 
     def testcnterClear(self):
-
-        self.thread_Serial.comPort.writeComPort(bytes.fromhex("070100140000000A"))
+        message = self.thread_Serial.PCPoint.writePointData(self.thread_Serial.PCPoint.test_cnter,0)
+        self.thread_Serial.comPort.writeComPort(message)
 
     def batInfoClear(self):
        self.textBrowser_batInfo.clear()
@@ -240,6 +270,19 @@ class Ui_UserMainWindow(Ui_MainWindow):
 
 
 
+
+##Debug
+    def sendDebugAddr(self):
+        string = self.textEdit_writeDebug.toPlainText()
+        addr = int(string, 16)
+        if addr < 0 or addr > 0xFFFFFFFF:
+            self.textBrowser_DebugReg.setText("Wrong Addr")
+        addr1 = addr >> 16
+        addr2 = addr & 0xFFFF
+        message1 = self.thread_Serial.PCPoint.writePointData(self.thread_Serial.PCPoint.debug_addr1, addr1)
+        message2 = self.thread_Serial.PCPoint.writePointData(self.thread_Serial.PCPoint.debug_addr2, addr2)
+        self.thread_Serial.comPort.writeComPort(message1)
+        self.thread_Serial.comPort.writeComPort(message2)
 
 
 ##############################################################
