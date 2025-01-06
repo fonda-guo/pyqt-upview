@@ -6,7 +6,14 @@ import time
 
 from comSCPI import SCPI
 
-current = 0
+current = 0 #int16
+def lookup_current():
+    global current
+    return current
+
+def update_current_times10(cur):
+    global current
+    current = int(cur*10)
 
 class Thread_SCPIHandle(QThread):
     faultACT = pyqtSignal(str)
@@ -16,6 +23,7 @@ class Thread_SCPIHandle(QThread):
     tricklethreshould1 = 3.50    #78A
     tricklethreshould2 = 3.55    #31A
     volupperbound = 3.58
+
     def __init__(self):
         super(Thread_SCPIHandle, self).__init__()
         self.scpi = SCPI()
@@ -103,7 +111,7 @@ class Thread_SCPIHandle(QThread):
 
     def run(self):
         while True:
-            time.sleep(0.5)
+            time.sleep(0.1)
             if self.scpi.openFlag:
                 vol = self.volLoadQuery()
                 cur = self.currLoadQuery()
@@ -124,6 +132,8 @@ class Thread_SCPIHandle(QThread):
                 except:
                     self.faultACT.emit("wrong cur number")
                     continue
+
+                update_current_times10(cur)
 
                 if vol >= 30 or vol <= 18:
                     self.faultACT.emit("vol fault")

@@ -7,13 +7,16 @@ from pyexpat.errors import messages
 import Commu_test
 from Commu_test import *
 from threadDataSave import Thread_DataSaveHandle
+from threadPlot import Thread_PlotHandle
 from threadSCPI import Thread_SCPIHandle
 from threadSerial import Thread_SerialHandle
+import pyqtgraph as pg
 
 
 class Ui_UserMainWindow(Ui_MainWindow):
     def __init__(self,MainWindow):
         self.setupUi(MainWindow)
+        self.myPen = pg.mkPen(color=(255, 0, 0),width = 2.5)
         self.displayInit()
     # Object serial
         self.thread_Serial = Thread_SerialHandle()
@@ -31,6 +34,11 @@ class Ui_UserMainWindow(Ui_MainWindow):
         self.thread_save = Thread_DataSaveHandle()
         self.thread_save.fileNameShow.connect(self.showFileName)
         self.thread_save.start()
+
+        #plot
+        self.thread_plot = Thread_PlotHandle()
+        self.thread_plot.dataFinished.connect(self.plotUpdate)
+        self.thread_plot.start()
 
         self.debugBuffer = 0
 
@@ -64,7 +72,15 @@ class Ui_UserMainWindow(Ui_MainWindow):
                          29:self.lcdSOCcell6,
                          30:self.lcdSOCcell7,
                          31:self.lcdSOCcell8,
-                         32:self.lcdSOHbox
+                         32:self.lcdSOHbox,
+                         35:self.lcdR1,
+                         36:self.lcdR2,
+                         37:self.lcdR3,
+                         38:self.lcdR4,
+                         39:self.lcdR5,
+                         40:self.lcdR6,
+                         41:self.lcdR7,
+                         42:self.lcdR8
                          }
 
 
@@ -89,9 +105,12 @@ class Ui_UserMainWindow(Ui_MainWindow):
         self.pushButton_newFileSave.clicked.connect(self.newDataSave)
         self.pushButton_StartSave.clicked.connect(self.startStopSavingData)
         self.pushButton_sendAddr.clicked.connect(self.sendDebugAddr)
-        #
+        self.comboBox_plotcellchose.currentIndexChanged.connect(self.cellVoltageIndexUpdate)
+        #limit or window will cursh after 6 hours
         self.textBroswerMaxSet()
-
+        #plot init
+        self.mycurPlot = self.plotCurrentInit()
+        self.myvolPlot = self.plotVoltageInit()
    #all textBroswer max 20 message
     def textBroswerMaxSet(self):
         self.textBrowser_receive.document().setMaximumBlockCount(20)
@@ -117,10 +136,13 @@ class Ui_UserMainWindow(Ui_MainWindow):
             if self.thread_Serial.comPort.openFlag: return
             self.thread_Serial.comPort.openComPort(comname,comrate)
             self.pushButton_openport.setText("close port")
+            self.plotClear()
+            self.thread_plot.openPlotFlag = True  #start plot
         else:
             self.thread_Serial.comPort.openFlag = False
             self.thread_Serial.comPort.closeComPort()
             self.pushButton_openport.setText("open port")
+            self.thread_plot.openPlotFlag = False  #end plot
     # send Str
     def sendMessage(self):
         message = self.textEdit_sendmessage.toPlainText()
@@ -225,7 +247,8 @@ class Ui_UserMainWindow(Ui_MainWindow):
             show_cur = data
             if data > 32767:
                 show_cur = data - 65536
-            self.showdict[index].display(format(show_cur/ 25, '.1f'))
+            #self.showdict[index].display(format(show_cur/ 25, '.1f'))
+            self.showdict[index].display(format(show_cur / 10, '.1f'))
         elif index ==self.thread_Serial.PCPoint.test_cnter:
             hour = int(data*0.5/3600)
             minute = int(data*0.5/60)  - hour*60
@@ -238,6 +261,8 @@ class Ui_UserMainWindow(Ui_MainWindow):
             self.textBrowser_DebugReg.setText(hex(self.debugBuffer))
         elif self.thread_Serial.PCPoint.SOC_box <= index <= self.thread_Serial.PCPoint.SOH_box:
             self.showdict[index].display(format(data/100, '.2f'))
+        elif self.thread_Serial.PCPoint.resis_cell1 <= index <= self.thread_Serial.PCPoint.resis_cell8:
+            self.showdict[index].display(format(data/1000, '.3f'))
         elif index == self.thread_Serial.PCPoint.fault:
             if data == 1:
                 self.textBrowser_batInfo.append("I2C DEAD!")
@@ -283,6 +308,41 @@ class Ui_UserMainWindow(Ui_MainWindow):
         message2 = self.thread_Serial.PCPoint.writePointData(self.thread_Serial.PCPoint.debug_addr2, addr2)
         self.thread_Serial.comPort.writeComPort(message1)
         self.thread_Serial.comPort.writeComPort(message2)
+
+
+#plot
+    def plotCurrentInit(self):
+        self.graphicsView_current.setBackground('w')
+        self.graphicsView_current.showGrid(x = True,y = True)
+        self.graphicsView_current.enableAutoRange()
+        mycurplot = self.graphicsView_current.plot([0],[0],pen = self.myPen)
+        return mycurplot
+
+    def plotVoltageInit(self):
+        self.graphicsView_voltage.setBackground('w')
+        self.graphicsView_voltage.showGrid(x=True, y=True)
+        self.graphicsView_voltage.enableAutoRange()
+        myvolplot = self.graphicsView_voltage.plot([0], [0],pen = self.myPen)
+        return myvolplot
+
+    def plotClear(self):
+        self.thread_plot.t_vol = [0]
+        self.thread_plot.t_cur = [0]
+        self.thread_plot.voltage = [0]
+        self.thread_plot.current = [0]
+
+    def plotUpdate(self):
+        try:
+            self.mycurPlot.setData(self.thread_plot.t_cur, self.thread_plot.current)
+            self.myvolPlot.setData(self.thread_plot.t_vol, self.thread_plot.voltage)
+        except:
+            self.textBrowser_batInfo.append("plot data wrong")
+
+    def cellVoltageIndexUpdate(self):
+        string = self.comboBox_plotcellchose.currentText()
+        self.thread_plot.updateVoltageIndex(string)
+        self.thread_plot.t_vol = [0]
+        self.thread_plot.voltage = [0]
 
 
 ##############################################################

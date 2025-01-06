@@ -8,11 +8,14 @@ def update_pointdict(index,data):
     elif index == PCPoint.current:
         if data > 32767:
             data = data - 65536
-        pointdict[index] = format(data / 25, '.1f')
+        #pointdict[index] = format(data / 25, '.1f')
+        pointdict[index] = format(data / 10, '.1f')
     elif PCPoint.SOC_box <= index <= PCPoint.SOH_box:
         pointdict[index] = format(data / 100, '.2f')
     elif PCPoint.maxcellvol <= index <= PCPoint.mincellvol:
         pointdict[index] = format(data / 1000, '.3f')
+    elif PCPoint.resis_cell1 <= index <= PCPoint.resis_cell8:
+        pointdict[index] = format(data/1000, '.3f')
 
 def lookup_pointdict(index):
     global pointdict
@@ -59,12 +62,20 @@ class PCPoint:
     SOH_box = 32
     maxcellvol = 33
     mincellvol = 34
+    resis_cell1 = 35
+    resis_cell2 = 36
+    resis_cell3 = 37
+    resis_cell4 = 38
+    resis_cell5 = 39
+    resis_cell6 = 40
+    resis_cell7 = 41
+    resis_cell8 = 42
     # add here and change the number
-    fault = 35
+    fault = 43
     # here is to wirte
-    debug_addr1 = 36
-    debug_addr2 = 37
-    u16_pc_buffer_num = 38
+    debug_addr1 = 44
+    debug_addr2 = 45
+    u16_pc_buffer_num = 46
     def __init__(self):
         a = 1+1
         # self.cell1Vol = 0
@@ -97,6 +108,16 @@ class PCPoint:
         str2 = "0000000A"
         pc_point_str = hex(index)[2:].rjust(4,'0')
         strp = str1 + pc_point_str + str2
+        return bytes.fromhex(strp)
+
+    def writeCurData(self,index,data):
+        str1 = "0701"
+        str2 = "000A"
+        pc_point_str  = hex(index)[2:].rjust(4, '0')
+        if data < 0:
+            data = 65536 + data
+        pc_point_data = hex(data)[2:].rjust(4, '0')
+        strp = str1 + pc_point_str + pc_point_data + str2
         return bytes.fromhex(strp)
 
     def writePointData(self,index,data):

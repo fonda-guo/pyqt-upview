@@ -3,6 +3,10 @@ import time
 from PyQt5.QtCore import *
 from comPort import COM
 from PCPoint import *
+import pyqtgraph as pg
+
+from threadSCPI import lookup_current
+
 
 class Thread_SerialHandle(QThread):
     data_received = pyqtSignal(bytes)
@@ -22,6 +26,12 @@ class Thread_SerialHandle(QThread):
                 #keep asking mode
                 # if self.pc_askindex == 0:
                 #     t_start = time.perf_counter()
+                #write current
+                cur = lookup_current()
+                cur_message = self.PCPoint.writeCurData(self.PCPoint.current,cur)
+                self.comPort.writeComPort(cur_message)
+                time.sleep(0.01)
+                #ask
                 if self.pc_askindex < self.PCPoint.fault:
                   bytesmessage = self.PCPoint.askPointData(self.pc_askindex)
                   self.comPort.writeComPort(bytesmessage)
