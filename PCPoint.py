@@ -16,6 +16,8 @@ def update_pointdict(index,data):
         pointdict[index] = format(data / 1000, '.3f')
     elif PCPoint.resis_cell1 <= index <= PCPoint.resis_cell8:
         pointdict[index] = format(data/1000, '.3f')
+    elif PCPoint.dVdC1 <= index <= PCPoint.dVdC8:
+        pointdict[index] = format(data, '.3f')
 
 def lookup_pointdict(index):
     global pointdict
@@ -70,12 +72,20 @@ class PCPoint:
     resis_cell6 = 40
     resis_cell7 = 41
     resis_cell8 = 42
+    dVdC1 = 43
+    dVdC2 = 44
+    dVdC3 = 45
+    dVdC4 = 46
+    dVdC5 = 47
+    dVdC6 = 48
+    dVdC7 = 49
+    dVdC8 = 50
     # add here and change the number
-    fault = 43
+    fault = 51
     # here is to wirte
-    debug_addr1 = 44
-    debug_addr2 = 45
-    u16_pc_buffer_num = 46
+    debug_addr1 = 52
+    debug_addr2 = 53
+    u16_pc_buffer_num = 54
     def __init__(self):
         a = 1+1
         # self.cell1Vol = 0

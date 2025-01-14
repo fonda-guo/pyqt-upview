@@ -80,7 +80,15 @@ class Ui_UserMainWindow(Ui_MainWindow):
                          39:self.lcdR5,
                          40:self.lcdR6,
                          41:self.lcdR7,
-                         42:self.lcdR8
+                         42:self.lcdR8,
+                         43:self.lcddVdC1,
+                         44:self.lcddVdC2,
+                         45:self.lcddVdC3,
+                         46:self.lcddVdC4,
+                         47:self.lcddVdC5,
+                         48:self.lcddVdC6,
+                         49:self.lcddVdC7,
+                         50:self.lcddVdC8
                          }
 
 
@@ -263,6 +271,8 @@ class Ui_UserMainWindow(Ui_MainWindow):
             self.showdict[index].display(format(data/100, '.2f'))
         elif self.thread_Serial.PCPoint.resis_cell1 <= index <= self.thread_Serial.PCPoint.resis_cell8:
             self.showdict[index].display(format(data/1000, '.3f'))
+        elif self.thread_Serial.PCPoint.dVdC1 <= index <= self.thread_Serial.PCPoint.dVdC8:
+            self.showdict[index].display(format(data, '.0f'))
         elif index == self.thread_Serial.PCPoint.fault:
             if data == 1:
                 self.textBrowser_batInfo.append("I2C DEAD!")
