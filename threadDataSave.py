@@ -41,7 +41,7 @@ class Thread_DataSaveHandle(QThread):
             "ts3" : self.pcdict.ts3,
             "ts4" : self.pcdict.ts4,
             "current" : self.pcdict.current,
-            "SOC_box" : self.pcdict.SOC_box,
+            "SOC_box_Counter" : self.pcdict.SOC_box,
             "SOC_cell1" : self.pcdict.SOC_cell1,
             "SOC_cell2" : self.pcdict.SOC_cell2,
             "SOC_cell3" : self.pcdict.SOC_cell3,
@@ -66,6 +66,11 @@ class Thread_DataSaveHandle(QThread):
             "dVdC6"     : self.pcdict.dVdC6,
             "dVdC7"     : self.pcdict.dVdC7,
             "dVdC8"     : self.pcdict.dVdC8,
+            "CB_bits"   : self.pcdict.CB_bits,
+            "controlBits": self.pcdict.controlBits,
+            "Cali_bits" : self.pcdict.Cali_bits,
+            "SOC_box_cal": self.pcdict.SOC_box_cal,
+            "SOC_box_show": self.pcdict.SOC_box_show,
         }
         self.filename = "./data" + time.strftime('%Y-%m-%d %H-%M-%S') + ".csv"
         self.nameRow = []

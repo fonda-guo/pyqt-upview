@@ -18,6 +18,7 @@ class Thread_SerialHandle(QThread):
         self.comPort = COM()
         self.PCPoint = PCPoint()
         self.pc_askindex = 0
+        self.cutOffCur = False
 
     def run(self):
         while True:
@@ -28,6 +29,8 @@ class Thread_SerialHandle(QThread):
                 #     t_start = time.perf_counter()
                 #write current
                 cur = lookup_current()
+                if self.cutOffCur:
+                    cur = 0
                 cur_message = self.PCPoint.writeCurData(self.PCPoint.current,cur)
                 self.comPort.writeComPort(cur_message)
                 time.sleep(0.01)
@@ -36,7 +39,7 @@ class Thread_SerialHandle(QThread):
                   bytesmessage = self.PCPoint.askPointData(self.pc_askindex)
                   self.comPort.writeComPort(bytesmessage)
                   self.pc_askindex = self.pc_askindex + 1
-                else:
+                else :
                     self.pc_askindex = 0
                     continue
                 # read

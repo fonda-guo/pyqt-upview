@@ -18,8 +18,8 @@ def update_current_times10(cur):
 class Thread_SCPIHandle(QThread):
     faultACT = pyqtSignal(str)
     showLoad = pyqtSignal(float,float)
-    vollowerbound = 2.9
-    vollowerthd = 2.905
+    vollowerbound = 2.7
+    vollowerthd = 2.71
     tricklethreshould1 = 3.50    #78A
     tricklethreshould2 = 3.55    #31A
     volupperbound = 3.58

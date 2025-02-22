@@ -4,13 +4,15 @@ def update_pointdict(index,data):
     if (index >= 0) and (index <= PCPoint.LDpinVol):
         pointdict[index] = format(data / 1000, '.3f')
     elif (index >= PCPoint.ts1) and (index <= PCPoint.ts4):
+        if data > 32767:
+            data = data - 65536
         pointdict[index] = format(data/10, '.1f')
     elif index == PCPoint.current:
         if data > 32767:
             data = data - 65536
         #pointdict[index] = format(data / 25, '.1f')
         pointdict[index] = format(data / 10, '.1f')
-    elif PCPoint.SOC_box <= index <= PCPoint.SOH_box:
+    elif PCPoint.SOC_box <= index <= PCPoint.SOH_box or PCPoint.SOC_box_cal <= index <= PCPoint.SOC_box_show:
         pointdict[index] = format(data / 100, '.2f')
     elif PCPoint.maxcellvol <= index <= PCPoint.mincellvol:
         pointdict[index] = format(data / 1000, '.3f')
@@ -18,6 +20,8 @@ def update_pointdict(index,data):
         pointdict[index] = format(data/1000, '.3f')
     elif PCPoint.dVdC1 <= index <= PCPoint.dVdC8:
         pointdict[index] = format(data, '.3f')
+    elif index == PCPoint.CB_bits or index == PCPoint.controlBits or index == PCPoint.Cali_bits:
+        pointdict[index] = data
 
 def lookup_pointdict(index):
     global pointdict
@@ -80,14 +84,19 @@ class PCPoint:
     dVdC6 = 48
     dVdC7 = 49
     dVdC8 = 50
+    CB_bits = 51
+    Cali_bits = 52
+    SOC_box_cal = 53
+    SOC_box_show = 54
     # add here and change the number
-    fault = 51
+    fault = 55
     # here is to wirte
-    debug_addr1 = 52
-    debug_addr2 = 53
-    u16_pc_buffer_num = 54
+    debug_addr1 = 56
+    debug_addr2 = 57
+    controlBits = 58
+    u16_pc_buffer_num = 59
     def __init__(self):
-        a = 1+1
+        update_pointdict(self.controlBits,0)
         # self.cell1Vol = 0
         # self.cell2Vol = 1
         # self.cell3Vol = 2
