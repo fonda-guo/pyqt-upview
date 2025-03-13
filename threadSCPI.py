@@ -5,6 +5,7 @@ from comPort import COM
 import time
 
 from comSCPI import SCPI
+from dynamicCurrent import dynamicCur
 
 current = 0 #int16
 def lookup_current():
@@ -18,6 +19,7 @@ def update_current_times10(cur):
 class Thread_SCPIHandle(QThread):
     faultACT = pyqtSignal(str)
     showLoad = pyqtSignal(float,float)
+    finishCur = pyqtSignal()
     vollowerbound = 2.7
     vollowerthd = 2.71
     tricklethreshould1 = 3.50    #78A
@@ -28,6 +30,8 @@ class Thread_SCPIHandle(QThread):
         super(Thread_SCPIHandle, self).__init__()
         self.scpi = SCPI()
         self.pcpoint = PCPoint()
+        self.dynamicCur = dynamicCur()
+        self.dynamicCurFlag = False
     def scpiCheckAct(self):
         if self.scpi.openFlag:
             result = ''
@@ -180,3 +184,33 @@ class Thread_SCPIHandle(QThread):
                         self.faultACT.emit("lower cell voltage reached")
                         self.outputClose()
                 self.showLoad.emit(cur,vol)
+
+                if self.dynamicCurFlag :
+                    t = time.perf_counter()
+                    delt_t = t - self.dynamicCur.lasttimestamp
+                    if delt_t >= self.dynamicCur.lastindextime:
+                        self.dynamicCur.alreadypasttime = self.dynamicCur.alreadypasttime + self.dynamicCur.lastindextime
+                        if self.dynamicCur.alreadypasttime > self.dynamicCur.totaltime:
+                            self.dynamicCur.alreadypasttime = self.dynamicCur.totaltime
+                        pro = int(self.dynamicCur.alreadypasttime / self.dynamicCur.totaltime * 100)
+                        self.dynamicCur.progressBarUpdate.emit(pro)
+                        if self.dynamicCur.index < self.dynamicCur.totalindex:
+                            self.dynamicCur.lastindextime = self.dynamicCur.dynamicCurTbl.loc[self.dynamicCur.index, "Time"]
+                            curtbl = self.dynamicCur.dynamicCurTbl.loc[self.dynamicCur.index, "Current"]
+                            if curtbl < 0:
+                                # discharge (load current)
+                                self.loadCurSet(str(-curtbl))
+                                self.voltageSet("0")
+                            else:
+                                # charge (source current)
+                                self.sourCurSet(str(curtbl))
+                                self.voltageSet("30")
+                            self.dynamicCur.lasttimestamp = time.perf_counter()
+                            self.dynamicCur.index = self.dynamicCur.index + 1
+                            self.dynamicCur.indexlabelUpdate.emit(curtbl)
+                        elif self.dynamicCur.index == self.dynamicCur.totalindex:
+                            self.sourCurSet("0")
+                            self.voltageSet("0")
+                            self.finishCur.emit()
+                            self.dynamicCur.indexlabelUpdate.emit(0)
+                            self.dynamicCur.lastindextime = 0

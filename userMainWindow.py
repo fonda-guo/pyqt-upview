@@ -1,13 +1,14 @@
 import sys
 import time
 
-from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QLCDNumber
+from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QLCDNumber, QFileDialog
 from pyexpat.errors import messages
 
 import Commu_test
 from Commu_test import *
 from PCPoint import update_pointdict, lookup_pointdict
 from threadDataSave import Thread_DataSaveHandle
+from threadDynamicFile import Thread_DynamicFile
 from threadPlot import Thread_PlotHandle
 from threadSCPI import Thread_SCPIHandle
 from threadSerial import Thread_SerialHandle
@@ -26,10 +27,17 @@ class Ui_UserMainWindow(Ui_MainWindow):
         self.thread_Serial.data_lost.connect(self.dataWrongReport)
         self.thread_Serial.start()
 
+        # analyse data
+        self.thread_dycur = Thread_DynamicFile()
+        self.thread_dycur.analyzeStateSig.connect(self.showAnalyseData)
 
+        #after dynamic file to connect the signal
         self.thread_scpi = Thread_SCPIHandle()
         self.thread_scpi.faultACT.connect(self.wrongMessage)
         self.thread_scpi.showLoad.connect(self.showLoadData)
+        self.thread_scpi.dynamicCur.progressBarUpdate.connect(self.progressBarUpdate)
+        self.thread_scpi.dynamicCur.indexlabelUpdate.connect(self.labelUpdate)
+        self.thread_scpi.finishCur.connect(self.startDynamic)
         self.thread_scpi.start()
 
         self.thread_save = Thread_DataSaveHandle()
@@ -40,6 +48,7 @@ class Ui_UserMainWindow(Ui_MainWindow):
         self.thread_plot = Thread_PlotHandle()
         self.thread_plot.dataFinished.connect(self.plotUpdate)
         self.thread_plot.start()
+
 
         self.debugBuffer = 0
 
@@ -119,6 +128,8 @@ class Ui_UserMainWindow(Ui_MainWindow):
 
 
     def displayInit(self):
+        self.progressBar_DynCur.setValue(0)
+
         self.pushButton_scanport.clicked.connect(self.scanPort)
         self.pushButton_openport.clicked.connect(self.openclosePort)
         self.pushButton_sendmessage.clicked.connect(self.sendMessage)
@@ -142,6 +153,9 @@ class Ui_UserMainWindow(Ui_MainWindow):
         self.comboBox_plotcellchose.currentIndexChanged.connect(self.cellVoltageIndexUpdate)
         self.pushButton_CBcontrol.clicked.connect(self.closeOpneCB)
         self.pushButton_cutOffCur.clicked.connect(self.cutOffCur)
+        self.pushButton_openCurFile.clicked.connect(self.openFile)
+        self.pushButton_DynCurStart.clicked.connect(self.startDynamic)
+        self.pushButton_DynCurAgain.clicked.connect(self.dynamicAgain)
         #limit or window will cursh after 6 hours
         self.textBroswerMaxSet()
         #plot init
@@ -429,7 +443,40 @@ class Ui_UserMainWindow(Ui_MainWindow):
         self.thread_plot.t_vol = [0]
         self.thread_plot.voltage = [0]
 
+    #dynamic current
+    def openFile(self):
+        self.thread_dycur.start()
+    def showAnalyseData(self,bit, message):
+        self.textBrowser_info_ACT.append(message)
+        if bit != -1:
+            self.labelUpdate(0)
+    def startDynamic(self):
+        if self.pushButton_DynCurStart.text() == "Dynamic Start":
+            self.thread_scpi.loadCurSet("0")
+            self.thread_scpi.sourCurSet("0")
+            if self.thread_scpi.output() == 0:
+                self.thread_scpi.dynamicCurFlag = True
+                self.thread_scpi.dynamicCur.lasttimestamp = time.perf_counter()
+                self.pushButton_DynCurStart.setText("Dynamic Stop")
 
+        elif self.pushButton_DynCurStart.text() == "Dynamic Stop":
+            if self.thread_scpi.outputClose() == 0:
+                self.thread_scpi.dynamicCurFlag = False
+                self.pushButton_DynCurStart.setText("Dynamic Start")
+    def dynamicAgain(self):
+        self.thread_scpi.outputClose()
+        self.thread_scpi.dynamicCur.index = 0
+        self.thread_scpi.dynamicCur.alreadypasttime = 0
+        self.thread_scpi.dynamicCur.lastindextime = 0
+        self.progressBar_DynCur.setValue(0)
+        self.labelUpdate(0)
+    def progressBarUpdate(self,pro):
+        self.progressBar_DynCur.setValue(pro)
+    def labelUpdate(self,cur):
+        t = self.thread_scpi.dynamicCur.totaltime - self.thread_scpi.dynamicCur.alreadypasttime
+        t_str = time.strftime("%H:%M:%S", time.gmtime(t))
+        self.label_DynCurTime.setText("剩余时间:" + t_str)
+        self.label_DynCurIndex.setText("Index: " + str(self.thread_scpi.dynamicCur.index) + "/" + str(self.thread_scpi.dynamicCur.totalindex) + '\n' + "Table current:" + str(cur))
 ##############################################################
 class MainWindow(QMainWindow):
     def __init__(self):
